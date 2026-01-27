@@ -52,7 +52,7 @@ CREATE TABLE bronze.erp_cust_az12(
 	cid NVARCHAR(50),
 	bdate DATE,
 	gen NVARCHAR(50)
-)
+);
 
 --Create table erp location table
 IF OBJECT_ID('bronze.erp_loc_a101','U') IS NOT NULL
@@ -60,7 +60,7 @@ IF OBJECT_ID('bronze.erp_loc_a101','U') IS NOT NULL
 CREATE TABLE bronze.erp_loc_a101(
 	cid NVARCHAR(50),
 	cntry NVARCHAR(50)
-)
+);
 
 --Create table erp px_cat 
 IF OBJECT_ID('bronze.erp_px_cat_g1v2','U') IS NOT NULL
@@ -70,13 +70,4 @@ CREATE TABLE bronze.erp_px_cat_g1v2(
 	cat NVARCHAR(50),
 	subcat NVARCHAR(50),
 	maintenance NVARCHAR(50) 
-)
-
-
-		
-	
-END
-
-EXEC bronze.load_bronze;
-
-
+);
