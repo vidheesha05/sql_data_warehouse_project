@@ -1,0 +1,156 @@
+-- Data Quality checks for all the tables available in CRM and ERP
+
+--CRM tables
+
+--CUSTOMER INFORMATION TABLE
+--Check for NULL or Duplicate values in Primary Key
+Select 
+cst_id,
+count(*)
+from bronze.crm_cust_info
+group by cst_id
+having count(*) > 1 or cst_id is null
+
+--Check for Unwanted Spaces
+select cst_firstname
+from bronze.crm_cust_info
+where cst_firstname != TRIM(cst_firstname)
+
+select cst_lastname
+from bronze.crm_cust_info
+where cst_lastname != TRIM(cst_lastname)
+
+--Data Standardisation and Consistency
+select 
+case when upper(trim(cst_marital_status)) = 'M' then 'Married'
+	 when upper(trim(cst_marital_status)) = 'S' then 'Single'
+	 else 'n/a'
+end as cst_marital_status,
+case when upper(trim(cst_gndr)) = 'M' then 'Male'
+	 when upper(trim(cst_gndr)) = 'F' then 'Female'
+	 else 'n/a'
+end as cst_gndr
+from bronze.crm_cust_info
+
+
+--PRODUCT INFORMATION TABLE
+
+--Check for Nulls or Duplicates in Primary Key
+select
+prd_id,
+count(*)
+from bronze.crm_prd_info
+group by prd_id
+having count(*) > 1 or prd_id is null
+
+--Check for Unwanted Spaces
+Select 
+prd_nm
+from bronze.crm_prd_info
+where prd_nm != TRIM(prd_nm)
+
+--Check for Nulls or Negative in Cost
+Select 
+prd_cost
+from bronze.crm_prd_info
+where prd_cost < 0 or prd_cost is null
+
+--Data Standardisation & Consistency
+Select Distinct prd_line
+from bronze.crm_prd_info;
+
+--Check for Invalid Date Orders
+select 
+*
+from bronze.crm_prd_info
+where prd_end_date < prd_start_date
+
+
+-- SALES DETAILS TABLE
+
+--Check for Invalid Dates
+select 
+nullif(sls_order_dt,0) sls_order_dt
+from bronze.crm_sales_details
+where sls_order_dt <= 0 
+or len(sls_order_dt) != 8
+or sls_order_dt > 20500101 
+or sls_order_dt <19000101 --Checking for outliers by validating the boundaries of the date range
+
+select 
+nullif(sls_due_dt,0) sls_due_dt
+from bronze.crm_sales_details
+where sls_due_dt <= 0 
+or len(sls_due_dt) != 8
+or sls_due_dt > 20500101 
+or sls_due_dt <19000101 
+
+select 
+nullif(sls_ship_dt,0) sls_ship_dt
+from bronze.crm_sales_details
+where sls_ship_dt <= 0 
+or len(sls_ship_dt) != 8
+or sls_ship_dt > 20500101 
+or sls_ship_dt <19000101 
+
+--Check for Invalid Date Orders
+select *
+from bronze.crm_sales_details
+where sls_order_dt > sls_due_dt or sls_order_dt > sls_ship_dt
+
+
+--Check Data Consistency between: Sales, Price and Quantity
+Select DIStinct
+sls_sales,
+sls_quantity,
+sls_price
+from bronze.crm_sales_details
+where sls_sales != sls_quantity * sls_price
+or sls_quantity is null or sls_price is null or sls_sales is null
+or sls_sales <= 0 or sls_quantity <= 0 or sls_price <= 0
+order by sls_sales, sls_quantity, sls_price
+
+
+--ERP CUSTOMER INFORMATION 
+--Check for nulls  or duplicate values
+select
+cid,
+count(*)
+from bronze.erp_cust_az12
+group by cid
+having count(*) > 1 or cid is null
+
+--Check for unwanted spaces
+select 
+gen
+from bronze.erp_cust_az12
+where gen != trim(gen)
+
+-- Check for Outliers in Birthdate
+select DISTINCT bdate
+from bronze.erp_cust_az12
+where bdate < '1924-01-01' or bdate > getdate()
+
+--check for data standardisation & consistency in gen
+select distinct 
+gen,
+case when upper(trim(gen)) in ('F','Female') then 'Female'
+	 when upper(trim(gen)) in ('M','Male') then 'Male'
+	 else 'n/a'
+end as gen
+from bronze.erp_cust_az12
+
+
+--ERP CUSTOMER LOCATION TABLE
+select  cntry,
+case when upper(trim(cntry)) = 'DE' then 'Germany'
+	 when upper(trim(cntry)) in ('United States','US') then 'USA'
+	 when cntry is null or cntry = ' ' then 'n/a'
+	 else cntry
+end as cntry
+from bronze.erp_loc_a101
+
+--ERP PRODUCT TABLE
+
+select distinct maintenance
+from bronze.erp_px_cat_g1v2
